@@ -5,18 +5,20 @@ import React, { useState } from 'react';
 const Home: React.FC = () => {
   const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [inputMessage, setInputMessage] = useState<string>('');
+  const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
 
   const askTheAI = async () => {
-    if (inputMessage.trim() === '') return; // Ignore empty messages
+    if (inputMessage.trim() === '') return;
 
     try {
-      // Make a POST request to the /api/openai endpoint
+      setIsButtonDisabled(true);
+
       const response = await fetch('/api/openai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: inputMessage }), // Send the 'query' in the request body
+        body: JSON.stringify({ query: inputMessage }),
       });
 
       if (!response.ok) {
@@ -25,17 +27,17 @@ const Home: React.FC = () => {
 
       const data = await response.json();
 
-      // Update message history with the user's input and AI response
       setMessageHistory((prevHistory) => [
         ...prevHistory,
         `User: ${inputMessage}`,
-        `Assistant: ${data.response}`, // Assuming the response from the server has 'response' property
+        `Assistant: ${data.response}`,
       ]);
 
-      // Clear the input after asking the AI
       setInputMessage('');
     } catch (error) {
       console.error('Error making the API call:', error);
+    } finally {
+      setIsButtonDisabled(false);
     }
   };
 
@@ -43,9 +45,15 @@ const Home: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="max-w-lg w-full mx-auto p-6">
         <div className="bg-white p-4 mb-4 rounded-lg shadow-md w-full">
-          {/* Display the message history */}
           {messageHistory.map((message, index) => (
-            <p key={index}>{message}</p>
+            <div
+              key={index}
+              className={`p-2 border rounded-md ${
+                index % 2 === 0 ? 'bg-gray-100' : 'bg-gray-200'
+              }`}
+            >
+              <p>{message}</p>
+            </div>
           ))}
         </div>
 
@@ -60,8 +68,9 @@ const Home: React.FC = () => {
         <button
           className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           onClick={askTheAI}
+          disabled={isButtonDisabled}
         >
-          Ask the AI
+          {isButtonDisabled ? 'Processing...' : 'Ask the AI'}
         </button>
       </div>
     </div>
