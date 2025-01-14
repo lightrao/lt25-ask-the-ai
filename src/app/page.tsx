@@ -6,18 +6,37 @@ const Home: React.FC = () => {
   const [messageHistory, setMessageHistory] = useState<string[]>([]);
   const [inputMessage, setInputMessage] = useState<string>('');
 
-  const askTheAI = () => {
+  const askTheAI = async () => {
     if (inputMessage.trim() === '') return; // Ignore empty messages
 
-    // Update message history with the user's input
-    setMessageHistory((prevHistory) => [...prevHistory, `User: ${inputMessage}`]);
+    try {
+      // Make a POST request to the /api/openai endpoint
+      const response = await fetch('/api/openai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: inputMessage }), // Send the 'query' in the request body
+      });
 
-    // Provide a standard AI response (you can customize this message)
-    const aiResponse = "Assistant: Thank you for your question! Here's the answer.";
-    setMessageHistory((prevHistory) => [...prevHistory, aiResponse]);
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
 
-    // Clear the input after asking the AI
-    setInputMessage('');
+      const data = await response.json();
+
+      // Update message history with the user's input and AI response
+      setMessageHistory((prevHistory) => [
+        ...prevHistory,
+        `User: ${inputMessage}`,
+        `Assistant: ${data.response}`, // Assuming the response from the server has 'response' property
+      ]);
+
+      // Clear the input after asking the AI
+      setInputMessage('');
+    } catch (error) {
+      console.error('Error making the API call:', error);
+    }
   };
 
   return (
